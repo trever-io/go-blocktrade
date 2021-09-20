@@ -25,6 +25,26 @@ type APIClient struct {
 	pairCache  map[int64]*TradingPair
 }
 
+type APIError struct {
+	Message []string `json:"message"`
+	Code    int      `json:"-"`
+}
+
+func newAPIError(code int) *APIError {
+	return &APIError{
+		Code: code,
+	}
+}
+
+func (e *APIError) Error() string {
+	message := "API Error: Code(%d), "
+	for _, msg := range e.Message {
+		message += msg + ", "
+	}
+
+	return message
+}
+
 func NewClient(apiKey, apiSecret string) *APIClient {
 	return &APIClient{
 		apiKey:    apiKey,
@@ -138,6 +158,16 @@ func (a *APIClient) doRequest(req *http.Request) ([]byte, error) {
 
 	if Debug {
 		log.Println(string(b))
+	}
+
+	if resp.StatusCode != 200 {
+		apiErr := newAPIError(resp.StatusCode)
+		err := json.Unmarshal(b, &apiErr)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, apiErr
 	}
 
 	return b, nil
