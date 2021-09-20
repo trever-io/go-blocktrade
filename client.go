@@ -122,6 +122,10 @@ func (a *APIClient) requestPOST(endpoint string, request interface{}) ([]byte, e
 }
 
 func (a *APIClient) requestGET(endpoint string) ([]byte, error) {
+	return a.requestNoBody(endpoint, "GET")
+}
+
+func (a *APIClient) requestNoBody(endpoint string, method string) ([]byte, error) {
 	if a.apiKey == "" || a.apiSecret == "" {
 		return nil, errors.New("missing credentials")
 	}
@@ -132,7 +136,7 @@ func (a *APIClient) requestGET(endpoint string) ([]byte, error) {
 	}
 
 	url := fmt.Sprintf("%v%v", API_URL, endpoint)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +164,7 @@ func (a *APIClient) doRequest(req *http.Request) ([]byte, error) {
 		log.Println(string(b))
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode >= 300 {
 		apiErr := newAPIError(resp.StatusCode)
 		err := json.Unmarshal(b, &apiErr)
 		if err != nil {

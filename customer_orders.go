@@ -91,3 +91,9 @@ func (a *APIClient) GetCustomerOrder(customerOrderId string) (*OrderResponse, er
 	err = json.Unmarshal(b, &resp)
 	return resp, err
 }
+
+func (a *APIClient) CancelCustomerOrder(customerOrderId string) error {
+	url := fmt.Sprintf("%v/%v/cancel", CUSTOMER_ORDERS_ENDPOINT, customerOrderId)
+	_, err := a.requestNoBody(url, "POST")
+	return err
+}
