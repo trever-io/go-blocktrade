@@ -1,6 +1,9 @@
 package blocktrade
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 const TRADING_ASSETS_ENDPOINT = "/trading_assets"
 
@@ -41,4 +44,52 @@ func (a *APIClient) TradingAssets() ([]*TradingAsset, error) {
 	resp := make([]*TradingAsset, 0)
 	err = json.Unmarshal(b, &resp)
 	return resp, err
+}
+
+func (a *APIClient) TradingAssetFromId(id int64) (*TradingAsset, error) {
+	if val, ok := a.assetCache[id]; ok {
+		return val, nil
+	}
+
+	// not in cache. refetching
+	assets, err := a.TradingAssets()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, asset := range assets {
+		a.assetCache[asset.Id] = asset
+	}
+
+	if val, ok := a.assetCache[id]; ok {
+		return val, nil
+	} else {
+		return nil, fmt.Errorf("asset not found for id %d", id)
+	}
+}
+
+func (a *APIClient) TradingAssetFromCode(isoCode string) (*TradingAsset, error) {
+	for _, asset := range a.assetCache {
+		if asset.IsoCode == isoCode {
+			return asset, nil
+		}
+	}
+
+	// not in cache. refetching
+	assets, err := a.TradingAssets()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, asset := range assets {
+		a.assetCache[asset.Id] = asset
+	}
+
+	for _, asset := range a.assetCache {
+		if asset.IsoCode == isoCode {
+			return asset, nil
+		}
+	}
+
+	return nil, fmt.Errorf("asset not found for iso code: %v", isoCode)
 }

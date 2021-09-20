@@ -17,6 +17,9 @@ import (
 type APIClient struct {
 	apiKey    string
 	apiSecret string
+
+	assetCache map[int64]*TradingAsset
+	pairCache  map[int64]*TradingPair
 }
 
 func NewClient(apiKey, apiSecret string) *APIClient {
