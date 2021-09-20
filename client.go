@@ -26,6 +26,9 @@ func NewClient(apiKey, apiSecret string) *APIClient {
 	return &APIClient{
 		apiKey:    apiKey,
 		apiSecret: apiSecret,
+
+		assetCache: make(map[int64]*TradingAsset),
+		pairCache:  make(map[int64]*TradingPair),
 	}
 }
 
