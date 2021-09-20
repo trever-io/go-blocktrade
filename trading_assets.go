@@ -14,9 +14,9 @@ const CurrencyType_CRYPTOCURRENCY CurrencyType = "CRYPTOCURRENCY"
 
 type DepositMethod string
 
-const DepositMethod_WALLET_ADDRESS = "WALLET_ADDRESS"
-const DepositMethod_CLEAR_JUNCTION_SEPA = "CLEAR_JUNCTION_SEPA"
-const DepositMethod_COINIFY = "COINIFY"
+const DepositMethod_WALLET_ADDRESS DepositMethod = "WALLET_ADDRESS"
+const DepositMethod_CLEAR_JUNCTION_SEPA DepositMethod = "CLEAR_JUNCTION_SEPA"
+const DepositMethod_COINIFY DepositMethod = "COINIFY"
 
 type TradingAsset struct {
 	Id                      int64           `json:"id"`
