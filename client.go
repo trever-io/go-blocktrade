@@ -98,6 +98,29 @@ func (a *APIClient) requestPOST(endpoint string, request interface{}) ([]byte, e
 	return a.doRequest(req)
 }
 
+func (a *APIClient) requestGET(endpoint string) ([]byte, error) {
+	if a.apiKey == "" || a.apiSecret == "" {
+		return nil, errors.New("missing credentials")
+	}
+
+	nonce, sig, err := a.nonceAndSignature(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%v%v", API_URL, endpoint)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add(API_KEY_HEADER, a.apiKey)
+	req.Header.Add(NONCE_HEADER, fmt.Sprint(nonce))
+	req.Header.Add(SIGNATURE_HEADER, sig)
+
+	return a.doRequest(req)
+}
+
 func (a *APIClient) doRequest(req *http.Request) ([]byte, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
