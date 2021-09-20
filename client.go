@@ -9,10 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 )
+
+var Debug = false
 
 type APIClient struct {
 	apiKey    string
@@ -128,5 +131,14 @@ func (a *APIClient) doRequest(req *http.Request) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	return ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if Debug {
+		log.Println(string(b))
+	}
+
+	return b, nil
 }
