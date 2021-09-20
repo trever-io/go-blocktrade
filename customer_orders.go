@@ -80,8 +80,8 @@ func (a *APIClient) CreateCustomerOrder(request *CustomerOrderRequest) (*CreateO
 	return resp, err
 }
 
-func (a *APIClient) GetCustomerOrder(id int64) (*OrderResponse, error) {
-	url := fmt.Sprintf("%v/%v", CUSTOMER_ORDERS_ENDPOINT, fmt.Sprint(id))
+func (a *APIClient) GetCustomerOrder(customerOrderId string) (*OrderResponse, error) {
+	url := fmt.Sprintf("%v/%v", CUSTOMER_ORDERS_ENDPOINT, customerOrderId)
 	b, err := a.requestGET(url)
 	if err != nil {
 		return nil, err
