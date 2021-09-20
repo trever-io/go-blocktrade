@@ -37,9 +37,9 @@ func newAPIError(code int) *APIError {
 }
 
 func (e *APIError) Error() string {
-	message := "API Error: Code(%d), "
+	message := fmt.Sprintf("API Error: Code(%d)", e.Code)
 	for _, msg := range e.Message {
-		message += msg + ", "
+		message += ", " + msg
 	}
 
 	return message
