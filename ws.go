@@ -22,6 +22,10 @@ type blocktradeWebsocketMessage struct {
 	Payload     map[string]interface{} `json:"payload"`
 }
 
+type blockTradeUserOrdersWsResponse struct {
+	Data []*OrderResponse `json:"data"`
+}
+
 type websocketMessage struct {
 	Message []byte
 	Error   error
@@ -82,9 +86,16 @@ func (a *APIClient) handleWsMessages(wsChan chan websocketMessage, wsCloseChan c
 				break
 			}
 
-			orderResponse := new(OrderResponse)
+			orderResponse := new(blockTradeUserOrdersWsResponse)
 			err = json.Unmarshal(b, &orderResponse)
-			f(orderResponse, err)
+			if err != nil {
+				f(nil, err)
+				break
+			}
+
+			for _, order := range orderResponse.Data {
+				f(order, nil)
+			}
 		default:
 			log.Printf("Unhandled message_type: %v\n", wsMsg.MessageType)
 		}
