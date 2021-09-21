@@ -2,6 +2,7 @@ package blocktrade
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -96,6 +97,10 @@ func (a *APIClient) receiveWsMessages(conn *websocket.Conn, wsChan chan websocke
 }
 
 func (a *APIClient) SubscribeUserOrders(f UserOrderHandlerFunc) error {
+	if a.wsConn == nil {
+		return errors.New("websocket not initialized")
+	}
+
 	a.wsHandlerMtx.Lock()
 	a.wsHandlers[MessageType_UserOrders] = f
 	a.wsHandlerMtx.Unlock()
@@ -116,6 +121,10 @@ func (a *APIClient) SubscribeUserOrders(f UserOrderHandlerFunc) error {
 }
 
 func (a *APIClient) UnsubscribeUserOrders() error {
+	if a.wsConn == nil {
+		return errors.New("websocket not initialized")
+	}
+
 	unsubcribeMessage := map[string]interface{}{
 		"unsubscribe_user_orders": map[string]interface{}{},
 	}

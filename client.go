@@ -65,7 +65,10 @@ func NewClient(apiKey, apiSecret string) *APIClient {
 }
 
 func (a *APIClient) Close() {
-	a.wsConn.Close()
+	if a.wsConn != nil {
+		a.wsConn.Close()
+		a.wsConn = nil
+	}
 }
 
 const API_URL = "https://trade.blocktrade.com/api/v1"
