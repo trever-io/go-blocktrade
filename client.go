@@ -12,7 +12,10 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 var Debug = false
@@ -23,6 +26,10 @@ type APIClient struct {
 
 	assetCache map[int64]*TradingAsset
 	pairCache  map[int64]*TradingPair
+
+	wsConn       *websocket.Conn
+	wsHandlers   map[MessageType]interface{}
+	wsHandlerMtx sync.Mutex
 }
 
 type APIError struct {
@@ -52,7 +59,13 @@ func NewClient(apiKey, apiSecret string) *APIClient {
 
 		assetCache: make(map[int64]*TradingAsset),
 		pairCache:  make(map[int64]*TradingPair),
+
+		wsHandlers: make(map[MessageType]interface{}),
 	}
+}
+
+func (a *APIClient) Close() {
+	a.wsConn.Close()
 }
 
 const API_URL = "https://trade.blocktrade.com/api/v1"
