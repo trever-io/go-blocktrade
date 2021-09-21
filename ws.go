@@ -44,7 +44,9 @@ func (a *APIClient) handleWsMessages(wsChan chan websocketMessage) {
 	for {
 		msg := <-wsChan
 		if msg.Error != nil {
-			log.Printf("WS ERROR: %v\n", msg.Error)
+			if !websocket.IsCloseError(msg.Error) {
+				log.Printf("WS ERROR: %v\n", msg.Error)
+			}
 			return
 		}
 
