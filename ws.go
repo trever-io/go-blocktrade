@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -14,8 +15,10 @@ const MESSAGE_BUFFER_SIZE = 10
 type MessageType string
 
 const MessageType_UserOrders = "user_orders"
+const MessageType_UserTrades = "user_trades"
 
 type UserOrderHandlerFunc func(orderResponse *OrderResponse, err error)
+type UserTradeHandlerFunc func(tradeResponse *TradeResponse, err error)
 
 type blocktradeWebsocketMessage struct {
 	MessageType MessageType            `json:"message_type"`
@@ -152,6 +155,52 @@ func (a *APIClient) UnsubscribeUserOrders() error {
 
 	a.wsHandlerMtx.Lock()
 	delete(a.wsHandlers, MessageType_UserOrders)
+	a.wsHandlerMtx.Unlock()
+
+	return nil
+}
+
+func (a *APIClient) SubscribeUserTrades(f UserTradeHandlerFunc) error {
+	if a.wsConn == nil {
+		return errors.New("websocket not initialized")
+	}
+
+	a.wsHandlerMtx.Lock()
+	a.wsHandlers[MessageType_UserTrades] = f
+	a.wsHandlerMtx.Unlock()
+
+	userResp, err := a.User()
+	if err != nil {
+		return err
+	}
+
+	subscribeMessage := map[string]interface{}{
+		"subscribe_user_trades": map[string]interface{}{
+			"auth_token": userResp.WebsocketAuthToken,
+			"start_time": time.Now().UTC().Unix(),
+		},
+	}
+
+	err = a.wsConn.WriteJSON(subscribeMessage)
+	return err
+}
+
+func (a *APIClient) UnsubscribeUserTrades() error {
+	if a.wsConn == nil {
+		return errors.New("websocket not initialized")
+	}
+
+	unsubcribeMessage := map[string]interface{}{
+		"unsubscribe_user_trades": map[string]interface{}{},
+	}
+
+	err := a.wsConn.WriteJSON(unsubcribeMessage)
+	if err != nil {
+		return err
+	}
+
+	a.wsHandlerMtx.Lock()
+	delete(a.wsHandlers, MessageType_UserTrades)
 	a.wsHandlerMtx.Unlock()
 
 	return nil
