@@ -27,28 +27,36 @@ type websocketMessage struct {
 	Error   error
 }
 
-func (a *APIClient) Websocket() error {
+func (a *APIClient) Websocket() (<-chan error, error) {
 	wsChan := make(chan websocketMessage, MESSAGE_BUFFER_SIZE)
+	wsCloseChan := make(chan error)
 
 	conn, _, err := websocket.DefaultDialer.Dial(WS_URL, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	a.wsConn = conn
 	go a.receiveWsMessages(a.wsConn, wsChan)
-	go a.handleWsMessages(wsChan)
+	go a.handleWsMessages(wsChan, wsCloseChan)
 
-	return nil
+	return wsCloseChan, nil
 }
 
-func (a *APIClient) handleWsMessages(wsChan chan websocketMessage) {
+func (a *APIClient) handleWsMessages(wsChan chan websocketMessage, wsCloseChan chan error) {
 	for {
 		msg := <-wsChan
 		if msg.Error != nil {
 			if !websocket.IsCloseError(msg.Error) {
 				log.Printf("WS ERROR: %v\n", msg.Error)
 			}
+
+			wsCloseChan <- msg.Error
+			close(wsCloseChan)
 			return
+		}
+
+		if Debug {
+			log.Printf("WS EVENT: %v\n", string(msg.Message))
 		}
 
 		wsMsg := new(blocktradeWebsocketMessage)
@@ -89,6 +97,7 @@ func (a *APIClient) receiveWsMessages(conn *websocket.Conn, wsChan chan websocke
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			wsChan <- websocketMessage{Error: err}
+			close(wsChan)
 			return
 		}
 
