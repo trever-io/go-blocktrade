@@ -10,6 +10,6 @@ type TickerData struct {
 }
 
 type TickerResponse struct {
-	TradingPairId int64        `json:"trading_pair_id"`
-	Data          []TickerData `json:"data"`
+	TradingPairId int64      `json:"trading_pair_id"`
+	Data          TickerData `json:"data"`
 }
