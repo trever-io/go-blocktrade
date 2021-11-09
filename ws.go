@@ -14,11 +14,13 @@ const MESSAGE_BUFFER_SIZE = 10
 
 type MessageType string
 
-const MessageType_UserOrders = "user_orders"
-const MessageType_UserTrades = "user_trades"
+const MessageType_UserOrders MessageType = "user_orders"
+const MessageType_UserTrades MessageType = "user_trades"
+const MessageType_Ticker MessageType = "ticker"
 
 type UserOrderHandlerFunc func(orderResponse *OrderResponse, err error)
 type UserTradeHandlerFunc func(tradeResponse *TradeResponse, err error)
+type TickerHandlerFunc func(TickerResponse *TickerResponse, err error)
 
 type blocktradeWebsocketMessage struct {
 	MessageType MessageType            `json:"message_type"`
@@ -124,6 +126,28 @@ func (a *APIClient) handleWsMessages(wsChan chan websocketMessage, wsCloseChan c
 			for _, trade := range tradeResponse.Data {
 				f(trade, nil)
 			}
+
+		case MessageType_Ticker:
+			var f TickerHandlerFunc
+			if val, ok := a.wsHandlers[MessageType_Ticker]; ok {
+				f = val.(TickerHandlerFunc)
+			} else {
+				break
+			}
+
+			b, err := json.Marshal(wsMsg.Payload)
+			if err != nil {
+				f(nil, err)
+				break
+			}
+
+			tickerResponse := new(TickerResponse)
+			err = json.Unmarshal(b, &tickerResponse)
+			if err != nil {
+				f(nil, err)
+				break
+			}
+			f(tickerResponse, nil)
 
 		default:
 			log.Printf("Unhandled message_type: %v\n", wsMsg.MessageType)
@@ -231,6 +255,48 @@ func (a *APIClient) UnsubscribeUserTrades() error {
 
 	a.wsHandlerMtx.Lock()
 	delete(a.wsHandlers, MessageType_UserTrades)
+	a.wsHandlerMtx.Unlock()
+
+	return nil
+}
+
+func (a *APIClient) SubscribeTicker(tradingPairId int64, f TickerHandlerFunc) error {
+	if a.wsConn == nil {
+		return errors.New("websocket not initialized")
+	}
+
+	a.wsHandlerMtx.Lock()
+	a.wsHandlers[MessageType_Ticker] = f
+	a.wsHandlerMtx.Unlock()
+
+	subscribeMessage := map[string]interface{}{
+		"subscribe_ticker": map[string]interface{}{
+			"trading_pair_id": tradingPairId,
+		},
+	}
+
+	err := a.wsConn.WriteJSON(subscribeMessage)
+	return err
+}
+
+func (a *APIClient) UnsubscribeTicker(tradingPairId int64) error {
+	if a.wsConn == nil {
+		return errors.New("websocket not initialized")
+	}
+
+	unsubsribeMessage := map[string]interface{}{
+		"unsubscribe_tiker": map[string]interface{}{
+			"trading_pair_id": tradingPairId,
+		},
+	}
+
+	err := a.wsConn.WriteJSON(unsubsribeMessage)
+	if err != nil {
+		return err
+	}
+
+	a.wsHandlerMtx.Lock()
+	delete(a.wsHandlers, MessageType_Ticker)
 	a.wsHandlerMtx.Unlock()
 
 	return nil
