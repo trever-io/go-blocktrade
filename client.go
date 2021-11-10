@@ -19,6 +19,7 @@ import (
 )
 
 var Debug = false
+const TOO_MANY_REQUEST_MSG = "Too Many Requests"
 
 type APIClient struct {
 	apiKey    string
@@ -114,7 +115,7 @@ func (a *APIClient) requestPOST(endpoint string, request interface{}) ([]byte, e
 	nonce, sig, err := a.nonceAndSignature(request)
 	if err != nil {
 		return nil, err
-	}
+
 
 	b, err := json.Marshal(request)
 	if err != nil {
@@ -182,6 +183,11 @@ func (a *APIClient) doRequest(req *http.Request) ([]byte, error) {
 
 	if resp.StatusCode >= 300 {
 		apiErr := newAPIError(resp.StatusCode)
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			apiErr.Message = TOO_MANY_REQUEST_MSG
+		}
+
 		err := json.Unmarshal(b, &apiErr)
 		if err != nil {
 			return nil, err
