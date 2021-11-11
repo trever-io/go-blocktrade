@@ -214,7 +214,7 @@ func (a *APIClient) UnsubscribeUserOrders() error {
 	return nil
 }
 
-func (a *APIClient) SubscribeUserTrades(f UserTradeHandlerFunc) error {
+func (a *APIClient) SubscribeUserTrades(replayTime time.Duration, f UserTradeHandlerFunc) error {
 	if a.wsConn == nil {
 		return errors.New("websocket not initialized")
 	}
@@ -228,10 +228,12 @@ func (a *APIClient) SubscribeUserTrades(f UserTradeHandlerFunc) error {
 		return err
 	}
 
+	startTime := time.Now().Add(-replayTime)
+
 	subscribeMessage := map[string]interface{}{
 		"subscribe_user_trades": map[string]interface{}{
 			"auth_token": userResp.WebsocketAuthToken,
-			"start_time": time.Now().UTC().UnixMilli(),
+			"start_time": startTime.UTC().UnixMilli(),
 		},
 	}
 
