@@ -231,7 +231,7 @@ func (a *APIClient) SubscribeUserTrades(f UserTradeHandlerFunc) error {
 	subscribeMessage := map[string]interface{}{
 		"subscribe_user_trades": map[string]interface{}{
 			"auth_token": userResp.WebsocketAuthToken,
-			"start_time": time.Now().UTC().Unix(),
+			"start_time": time.Now().UTC().UnixMilli(),
 		},
 	}
 
