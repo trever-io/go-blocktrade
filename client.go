@@ -196,9 +196,11 @@ func (a *APIClient) doRequest(req *http.Request) ([]byte, error) {
 			return nil, err
 		}
 
-		if s, ok := apiErr.message.([]string); ok {
-			for _, msg := range s {
-				apiErr.Message += msg + ", "
+		if vList, ok := apiErr.message.([]interface{}); ok {
+			for _, v := range vList {
+				if s, ok := v.(string); ok {
+					apiErr.Message += s + ", "
+				}
 			}
 		}
 
