@@ -29,14 +29,16 @@ type APIClient struct {
 	assetCache map[int64]*TradingAsset
 	pairCache  map[int64]*TradingPair
 
+	nonceMtx     sync.Mutex
 	wsConn       *websocket.Conn
 	wsHandlers   map[MessageType]interface{}
 	wsHandlerMtx sync.Mutex
 }
 
 type APIError struct {
-	Message []string `json:"message"`
-	Code    int      `json:"-"`
+	Message string      `json:"-"`
+	message interface{} `json:"message"`
+	Code    int         `json:"-"`
 }
 
 func newAPIError(code int) *APIError {
@@ -46,11 +48,7 @@ func newAPIError(code int) *APIError {
 }
 
 func (e *APIError) Error() string {
-	message := fmt.Sprintf("API Error: Code(%d)", e.Code)
-	for _, msg := range e.Message {
-		message += ", " + msg
-	}
-
+	message := fmt.Sprintf("API Error: Code(%d) %v", e.Code, e.Message)
 	return message
 }
 
@@ -113,6 +111,8 @@ func (a *APIClient) requestPOST(endpoint string, request interface{}) ([]byte, e
 		return nil, errors.New("missing credentials")
 	}
 
+	a.nonceMtx.Lock()
+	defer a.nonceMtx.Unlock()
 	nonce, sig, err := a.nonceAndSignature(request)
 	if err != nil {
 		return nil, err
@@ -148,6 +148,8 @@ func (a *APIClient) requestNoBody(endpoint string, method string) ([]byte, error
 		return nil, errors.New("missing credentials")
 	}
 
+	a.nonceMtx.Lock()
+	defer a.nonceMtx.Unlock()
 	nonce, sig, err := a.nonceAndSignature(nil)
 	if err != nil {
 		return nil, err
@@ -186,12 +188,22 @@ func (a *APIClient) doRequest(req *http.Request) ([]byte, error) {
 		apiErr := newAPIError(resp.StatusCode)
 
 		if resp.StatusCode == http.StatusTooManyRequests {
-			apiErr.Message = []string{TOO_MANY_REQUEST_MSG}
+			apiErr.Message = TOO_MANY_REQUEST_MSG
 		}
 
 		err := json.Unmarshal(b, &apiErr)
 		if err != nil {
 			return nil, err
+		}
+
+		if s, ok := apiErr.message.([]string); ok {
+			for _, msg := range s {
+				apiErr.Message += msg + ", "
+			}
+		}
+
+		if s, ok := apiErr.message.(string); ok {
+			apiErr.Message = s
 		}
 
 		return nil, apiErr
