@@ -36,9 +36,9 @@ type APIClient struct {
 }
 
 type APIError struct {
-	Message string      `json:"-"`
-	message interface{} `json:"message"`
-	Code    int         `json:"-"`
+	Message         string      `json:"-"`
+	MessageInternal interface{} `json:"message"`
+	Code            int         `json:"-"`
 }
 
 func newAPIError(code int) *APIError {
@@ -196,7 +196,7 @@ func (a *APIClient) doRequest(req *http.Request) ([]byte, error) {
 			return nil, err
 		}
 
-		if vList, ok := apiErr.message.([]interface{}); ok {
+		if vList, ok := apiErr.MessageInternal.([]interface{}); ok {
 			for _, v := range vList {
 				if s, ok := v.(string); ok {
 					apiErr.Message += s + ", "
@@ -204,7 +204,7 @@ func (a *APIClient) doRequest(req *http.Request) ([]byte, error) {
 			}
 		}
 
-		if s, ok := apiErr.message.(string); ok {
+		if s, ok := apiErr.MessageInternal.(string); ok {
 			apiErr.Message = s
 		}
 
