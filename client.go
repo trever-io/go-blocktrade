@@ -28,6 +28,7 @@ type APIClient struct {
 
 	assetCache map[int64]*TradingAsset
 	pairCache  map[int64]*TradingPair
+	portfolio  *Portfolio
 
 	nonceMtx     sync.Mutex
 	wsConn       *websocket.Conn
