@@ -81,14 +81,14 @@ const CONTENT_TYPE = "application/json"
 
 func (a *APIClient) nonceAndSignature(request interface{}) (int64, string, error) {
 	nonce := time.Now().UTC().UnixNano() / 1e3
-	message := fmt.Sprintf("%v.%v.", a.apiKey, nonce)
+	message := fmt.Sprintf("%v.%v", a.apiKey, nonce)
 	if request != nil {
 		requestb, err := json.Marshal(request)
 		if err != nil {
 			return 0, "", err
 		}
 
-		message += fmt.Sprintf("%v", string(requestb))
+		message += fmt.Sprintf(".%v", string(requestb))
 	}
 
 	h := hmac.New(sha256.New, []byte(a.apiSecret))
