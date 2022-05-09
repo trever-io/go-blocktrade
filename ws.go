@@ -1,6 +1,7 @@
 package blocktrade
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -158,11 +159,15 @@ func (a *APIClient) handleWsMessages(wsChan chan websocketMessage, wsCloseChan c
 
 func (a *APIClient) receiveWsMessages(conn *websocket.Conn, wsChan chan websocketMessage) {
 	for {
-		_, msg, err := conn.ReadMessage()
+		t, msg, err := conn.ReadMessage()
 		if err != nil {
 			wsChan <- websocketMessage{Error: err}
 			close(wsChan)
 			return
+		}
+
+		if t == websocket.PongMessage {
+			continue
 		}
 
 		wsChan <- websocketMessage{Message: msg}
@@ -300,6 +305,33 @@ func (a *APIClient) UnsubscribeTicker(tradingPairId int64) error {
 	a.wsHandlerMtx.Lock()
 	delete(a.wsHandlers, MessageType_Ticker)
 	a.wsHandlerMtx.Unlock()
+
+	return nil
+}
+
+func (a *APIClient) StartPing(interval time.Duration) error {
+	if a.wsConn == nil {
+		return errors.New("websocket not initialized")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	a.pingCtx = ctx
+	a.pingCancel = cancel
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-a.pingCtx.Done():
+				return
+			case <-ticker.C:
+				a.wsConn.WriteMessage(websocket.PingMessage, []byte{})
+			}
+		}
+	}()
 
 	return nil
 }

@@ -2,6 +2,7 @@ package blocktrade
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -34,6 +35,9 @@ type APIClient struct {
 	wsConn       *websocket.Conn
 	wsHandlers   map[MessageType]interface{}
 	wsHandlerMtx sync.Mutex
+
+	pingCtx    context.Context
+	pingCancel context.CancelFunc
 }
 
 type APIError struct {
@@ -69,6 +73,10 @@ func (a *APIClient) Close() {
 	if a.wsConn != nil {
 		a.wsConn.Close()
 		a.wsConn = nil
+	}
+
+	if a.pingCancel != nil {
+		a.pingCancel()
 	}
 }
 
